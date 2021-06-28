@@ -83,7 +83,7 @@ def main():
 			postTitle = next(f)[:-1] # Trim the last character '\n'
 		#Case 3: Anything else, just concat the lines together.
 		else:
-			postContent += "<!-- wp:paragraph -->\n<p>" + line[:-1] + "</p>\n<!-- /wp:paragraph -->\n"
+			postContent += f"<!-- wp:paragraph -->\n<p>{line[:-1]}</p>\n<!-- /wp:paragraph -->\n"
 	else: #End of File
 		itemNode = createItemNode(doc, postTitle, postContent, postCategory)
 		channelNode.appendChild(itemNode)

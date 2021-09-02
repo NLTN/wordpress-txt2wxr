@@ -1,17 +1,25 @@
+import sys # To Check Python Version
 from xml.dom import minidom
 
 def createNode(doc, parent, tag, value):
+	"""Create an XML node."""
 	el = doc.createElement(tag)
 	
 	if type(value) == str:
 		el.appendChild(doc.createTextNode(value))
 	else:
+		# Before Python 3.8, there is an issue with minidom.createCDATA
+		# Read more: https://bugs.python.org/issue36407
+		if not (sys.version_info[0] >= 3 and sys.version_info[1] >= 8):
+			value.nodeType = value.TEXT_NODE
+		
 		el.appendChild(value)
 
 	parent.appendChild(el)
 	return el
 
 def createRootNode(doc):
+	"""Create an XML Root node."""
 	# ---------- ROOT ----------
 	root:minidom.Node = doc.createElement("rss")
 	root.setAttribute("version", "2.0")
@@ -23,6 +31,7 @@ def createRootNode(doc):
 	return root
 
 def createChannelNode(doc):
+	"""Create an XML node."""
 	# ---------- Channel ----------
 	channelNode:minidom.Node = doc.createElement("channel")
 
@@ -45,6 +54,7 @@ def createChannelNode(doc):
 	return channelNode
 
 def createItemNode(doc, post_title, post_content, post_category):
+	"""Create an XML node."""
 	# ---------- Channel/item ----------
 	itemNode:minidom.Node = doc.createElement('item')
 	createNode(doc, itemNode, "title", doc.createCDATASection(post_title))
@@ -59,6 +69,27 @@ def createItemNode(doc, post_title, post_content, post_category):
 	
 	return itemNode
 
+def saveToFile(doc, filename):
+	"""
+	Save an XML document to file
+
+	Params:
+	doc: minidom.Document
+		XML document
+	filename : str
+		Path and filename
+	"""
+	# Before Python 3.8, there is an issue with minidom.createCDATA
+	# Read more: https://bugs.python.org/issue36407
+	if sys.version_info[0] >= 3 and sys.version_info[1] >= 8:
+		xmlstr = doc.toprettyxml(indent='\t')
+	else:
+		xmlstr = doc.toprettyxml(indent='')
+
+	# Write to file
+	with open(filename, "w") as f:
+		f.write(xmlstr)
+
 def main():
 	# --- ROOT ---
 	doc = minidom.Document()
@@ -69,7 +100,7 @@ def main():
 	postCategory: str = ""
 	postContent: str = ""
 
-	f = open("input.txt", "r")
+	f = open("formatted_input.txt", "r")
 	# Go line by line to get Post Title, Content, and Category
 	for line in f:
 		#Case 1: The line is empty, which means End of a Post. Then, create  an item node
@@ -92,17 +123,30 @@ def main():
 	root.appendChild(channelNode)
 	doc.appendChild(root)
 
-	# DEBUG
-	print(doc.toprettyxml())
-
-	# PRETTY FORMAT
-	xmlstr = doc.toprettyxml(indent='\t')
-	with open("output_pretty.xml", "w") as f:
-		f.write(xmlstr)
+	# Export
+	saveToFile(doc, "output.xml")
 
 	# UTF-8
 	# with open("myfile.xml", "w") as xml_file:
 	# 	doc.writexml(xml_file, indent='\t', newl='\n', encoding='utf-8')
 
+def test():
+	# --- ROOT ---
+	doc = minidom.Document()
+	root = createRootNode(doc)
+	channelNode = createChannelNode(doc)
+	# createNode(doc, wp_authorNode, "wp:author_login", doc.createCDATASection("wordpress"))
+
+	# --- APPEND ---
+	root.appendChild(channelNode)
+	doc.appendChild(root)
+
+	# DEBUG
+	if sys.version_info[0] >= 3 and sys.version_info[1] >= 8:
+		print(doc.toprettyxml())
+	else:
+		print(doc.toprettyxml(indent=''))
+
 if __name__ == "__main__":
 	main()
+	# test()
